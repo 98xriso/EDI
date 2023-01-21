@@ -1,81 +1,141 @@
 let button = document.getElementById('btn');
+let controls = document.querySelector('#cntrls');
+let nextBtn = document.querySelector('#next');
+let prevBtn = document.querySelector('#prev');
+let chartContainer = document.querySelector('.charts');
+let tableBody = document.querySelector('.table-body');
+
+
+let counter = 1;
+
+async function getData(number) {
+
+    let url = `https://raw.githubusercontent.com/98xriso/EDI/main/${number}.json`
+
+    const response = await fetch(url);
+    if (response.ok) {
+        const data = await response.json();
+        return data;
+    }
+
+}
+
+function fillContent(data) {
+
+    let firstSet = [];
+    let numberOfFirstSet = {};
+    let secondSet = [];
+    let numberOfSecondSet = {};
+
+    data.forEach( item => {
+        const tableRow = 
+            `
+            <tr>
+                <td>${item.first}</td>
+                <td>${item.second}</td>
+                <td>${item.third}</td>
+                <td>${item.fourth}</td>
+                <td>${item.fifth}</td>
+                <td>${item.sixth}</td>
+            </tr>
+            `;
+        tableBody.innerHTML += tableRow;
+
+        firstSet.push(item.fifth);
+        secondSet.push(item.sixth);
+    });
+
+    firstSet.forEach(item => numberOfFirstSet[item] = (numberOfFirstSet[item]||0) + 1);
+    secondSet.forEach(item => numberOfSecondSet[item] = (numberOfSecondSet[item]||0) + 1);
+
+    chartContainer.innerHTML += 
+    `
+        <canvas id="chart1"></canvas>
+        <canvas id="chart2"></canvas>
+    `;
+
+    let ctx1 = document.querySelector('#chart1');
+    let ctx2 = document.querySelector('#chart2');
+
+    new Chart(ctx1, {
+        type: 'pie',
+        data: {
+            labels: [
+                ...Object.keys(numberOfFirstSet)
+            ],
+            datasets: [{
+                label: 'Numbers in first set',
+                data: Object.values(numberOfFirstSet),
+                hoverOffset: 4
+            }]
+        }
+    });
+
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: [
+                ...Object.keys(numberOfSecondSet)
+            ],
+            datasets: [{
+                label: 'Numbers in second set',
+                data: Object.values(numberOfSecondSet),
+                hoverOffset: 4
+            }]
+        }
+    });
+
+}
+
+function clearContent() {
+    chartContainer.innerHTML = '';
+    tableBody.innerHTML = '';
+}
+
 
 button.addEventListener('click', async () => {
 
     button.classList.add('invisible')
+    controls.classList.remove('invisible')
 
-    const response = await fetch('https://my.api.mockaroo.com/cars_api.json?key=4f4e4ef0');
+    const data = await getData(counter);
 
-    if (response.ok) {
-        const data = await response.json();
+    let dataBlock = document.querySelector('#data');
 
-        let dataBlock = document.querySelector('#data');
-        let tableBody = document.querySelector('.table-body');
+    dataBlock.classList.remove('invisible');
 
-        dataBlock.classList.remove('invisible');
+    fillContent(data);
 
-        let carMakes = [];
-        let numberOfCarMakes = {};
-        let countries = [];
-        let numberOfPeopleInCountries = {};
-
-        data.forEach( item => {
-            const tableRow = 
-                `
-                <tr>
-                    <td>${item.id}</td>
-                    <td>${item.first_name}</td>
-                    <td>${item.last_name}</td>
-                    <td>${item.gender}</td>
-                    <td>${item.country}</td>
-                    <td>${item.car_make}</td>
-                </tr>
-                `;
-            tableBody.innerHTML += tableRow;
-
-            carMakes.push(item.car_make);
-            countries.push(item.country);
-        });
-
-        carMakes.forEach(item => numberOfCarMakes[item] = (numberOfCarMakes[item]||0) + 1);
-        countries.forEach(item => numberOfPeopleInCountries[item] = (numberOfPeopleInCountries[item]||0) + 1);
-
-        let ctx1 = document.querySelector('#chart1');
-        let ctx2 = document.querySelector('#chart2');
-        // const ctx3 = document.querySelector('#chart3');
-
-        new Chart(ctx1, {
-            type: 'pie',
-            data: {
-                labels: [
-                    ...Object.keys(numberOfCarMakes)
-                ],
-                datasets: [{
-                    label: 'Number of car makes',
-                    data: Object.values(numberOfCarMakes),
-                    hoverOffset: 4
-                }]
-            }
-        });
-
-        new Chart(ctx2, {
-            type: 'bar',
-            data: {
-                labels: [
-                    ...Object.keys(numberOfPeopleInCountries)
-                ],
-                datasets: [{
-                    label: 'Number of people in countries',
-                    data: Object.values(numberOfPeopleInCountries),
-                    hoverOffset: 4
-                }]
-            }
-        });
-
-
-    }
-    else {
-        alert('error');
-    }
 
 });
+
+nextBtn.addEventListener('click', async () => {
+
+    counter += 1;
+    if (counter > 3) {
+        counter = 1;
+    }
+
+    clearContent();
+
+    const data = await getData(counter);
+
+    fillContent(data);
+
+
+});
+
+prevBtn.addEventListener('click', async () => {
+
+    counter -= 1;
+    if (counter < 1) {
+        counter = 3;
+    }
+
+    clearContent();
+
+    const data = await getData(counter);
+
+    fillContent(data);
+
+})
